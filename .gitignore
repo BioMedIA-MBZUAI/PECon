@@ -1,0 +1,9 @@
+.vscode
+checkpoints
+*.pt
+*.png
+__pycache__
+*.pyc
+*.ipynb
+visualization
+!visualization/*.py
