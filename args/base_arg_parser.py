@@ -16,7 +16,7 @@ class BaseArgParser(object):
         self.parser.add_argument('--model', type=str, choices=('PENet', 'PENetClassifier'), default='PENetClassifier',
                                  help='Model to use. PENetClassifier or PENet.')
         self.parser.add_argument('--batch_size', type=int, default=6, help='Batch size.')
-        self.parser.add_argument('--ckpt_path', type=str, default='data-dir/xnet_kin_90.pth.tar',
+        self.parser.add_argument('--ckpt_path', type=str, default='data-dir/penet_best.pth.tar',
                                  help='Path to checkpoint to load. If empty, start from scratch.')
         self.parser.add_argument('--data_dir', type=str, required=True,
                                  help='Path to data directory with both normal and aneurysm studies.')
@@ -24,7 +24,7 @@ class BaseArgParser(object):
                                  help='Path to pickled CTSeries list. Defaults to data_dir/series_list.pkl')
         self.parser.add_argument('--ehr_path', type=str, default='data-dir/ehr-new.csv',
                                  help='Path to ehr csv data. Defaults to data-dir/ehr-new.csv')
-        self.parser.add_argument('--gpu_ids', type=str, default='0,1,2',
+        self.parser.add_argument('--gpu_ids', type=str, default='0',
                                  help='Comma-separated list of GPU IDs. Use -1 for CPU.')
         self.parser.add_argument('--init_method', type=str, default='kaiming', choices=('kaiming', 'normal', 'xavier'),
                                  help='Initialization method to use for conv kernels and linear weights.')

@@ -11,10 +11,9 @@ from tqdm import tqdm
 from visualization import plot_metrics
 from models import model_checkpoints
 from args import TrainArgParser
-from saver import ModelSaver
-import util
 torch.manual_seed(0)
 device = "cpu" if torch.cuda.is_available() else "cuda"
+print("device",device)
 
 
 #loading data
@@ -50,6 +49,7 @@ parser = TrainArgParser()
 args_ = parser.parse_args()
 model_fn = models.__dict__[args_.model]
 backbone_model = model_fn(**vars(args_))
+backbone_model = backbone_model.to(device)
 if args_.use_pretrained:
     print("[INFO] Loading pretrained model from {}...".format(args_.ckpt_path))
     backbone_model.load_pretrained(args_.ckpt_path, args_.gpu_ids)
@@ -59,6 +59,7 @@ combined_model = CLIP(img_model, ehr_model, backbone_model)
 img_model = img_model.to(device)
 ehr_model = ehr_model.to(device)
 combined_model = combined_model.to(device)
+combined_model = torch.nn.DataParallel(combined_model, args_.gpu_ids)
 
 # Data Loaders
 train_set = CTPEDataset3d(args_, phase='train')
@@ -80,89 +81,100 @@ optimizer = torch.optim.SGD(combined_model.parameters(), lr=0.1)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.1)
 
 #train
-epochs= 300
+epochs= args_.num_epochs
 
 valid_loss_min = 20
 epochs_list=[]
 training_loss=[]
 validation_loss=[]
-for epoch in range(0, epochs):
-    train_loss=0
-    test_loss=0
-    epochs_list.append(epoch)
-    print("epoch number: {0}".format(epoch))
-    combined_model.train()
-    with tqdm(train_loader, unit = 'batch') as tepoch:
-        for batch_idx, (img_train_data, ehr_train_data, train_labels) in enumerate(tepoch):
-            # img_train_data = img_train_data.to(device)
-            # ehr_train_data = ehr_train_data.to(device)
-            # # train_labels = train_labels.to(device)
-            # for key, value in train_labels.items():
-            #     train_labels[key] = train_labels[key].to(device)
 
-            f1,f2, logits_scale = combined_model.forward(img_train_data.float(), ehr_train_data.float())
+def train():
+    for epoch in range(0, epochs):
+        train_loss=0
+        test_loss=0
+        epochs_list.append(epoch)
+        print("epoch number: {0}".format(epoch))
+        combined_model.train()
+        with tqdm(train_loader, unit = 'batch') as tepoch:
+            for batch_idx, (img_train_data, ehr_train_data, train_labels) in enumerate(tepoch):
 
-            optimizer.zero_grad()
-            loss = criterion(f1, f2.squeeze(), logits_scale)
-            
-            loss.backward()
-            optimizer.step()
-            
-            train_loss += loss.item()
-    
+                img_train_data = img_train_data.to(device)
+                ehr_train_data = ehr_train_data.to(device)
+                # train_labels = train_labels.to(device)
+                # for key, value in train_labels.items():
+                #     train_labels[key] = train_labels[key].to(device)
 
-    with torch.no_grad():
-        combined_model.eval()
-        with tqdm(val_loader, unit ="batch") as tepoch:
-            for batch_idx ,(img_val_data, ehr_val_data, val_labels) in enumerate(tepoch):
-                img_val_data = img_val_data.to(device)
-                ehr_val_data = ehr_val_data.to(device)
-                val_labels = val_labels.to(device)
-            
+                print(img_train_data.device, ehr_train_data.device)
+                f1,f2, logits_scale = combined_model.forward(img_train_data.float(), ehr_train_data.float())
+
+                optimizer.zero_grad()
+                loss = criterion(f1, f2.squeeze(), logits_scale)
                 
-                f1,f2, logits_scale = combined_model.forward(img_val_data.float(), ehr_val_data.float())
-
-
-                loss = criterion(f1, f2, logits_scale)
+                loss.backward()
+                optimizer.step()
                 
-                test_loss+=loss.item()
+                train_loss += loss.item()
+        
 
+        with torch.no_grad():
+            combined_model.eval()
+            with tqdm(val_loader, unit ="batch") as tepoch:
+                for batch_idx ,(img_val_data, ehr_val_data, val_labels) in enumerate(tepoch):
+                    img_val_data = img_val_data.to(device)
+                    ehr_val_data = ehr_val_data.to(device)
+                    # val_labels = val_labels.to(device)
                 
+                    
+                    f1,f2, logits_scale = combined_model.forward(img_val_data.float(), ehr_val_data.float())
 
 
-    img_checkpoint = {
-        'epoch': epoch + 1,
-        'valid_loss_min': test_loss/(batch_idx+1),
-        'state_dict': combined_model.visual.state_dict(),
-        'optimizer': optimizer.state_dict(),
-    }
+                    loss = criterion(f1, f2, logits_scale)
+                    
+                    test_loss+=loss.item()
 
-    ehr_checkpoint = {
-        'epoch': epoch + 1,
-        'valid_loss_min': test_loss/(batch_idx+1),
-        'state_dict': combined_model.text.state_dict(),
-        'optimizer': optimizer.state_dict(),
-    }
-
-    # save checkpoint
-    
-
-    # # ## TODO: save the model if validation loss has decreased
-    if  test_loss/(batch_idx+1) <= valid_loss_min:
-        # save checkpoint as best model
-        model_checkpoints.save_ckp(img_checkpoint, True, './checkpoints/pretrained_img_model.pt')
-        model_checkpoints.save_ckp(ehr_checkpoint, True, './checkpoints/pretrained_ehr_model.pt')
-        valid_loss_min = test_loss/(batch_idx+1)
-
-    training_loss.append(train_loss/(batch_idx+1))
-    validation_loss.append(test_loss/(batch_idx+1))
-    print(' train loss: {:.4f} test loss: {:.4f} valid_loss {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1),valid_loss_min))
-    print(logits_scale)
-    scheduler.step()
+                    
 
 
-plot_metrics.plot_loss(epochs_list, training_loss,'Training Loss','./visualization/pretraining','training_loss.png')
-plot_metrics.plot_loss(epochs_list, validation_loss,'Validation Loss' ,'./visualization/pretraining','validation_loss.png')
+        img_checkpoint = {
+            'epoch': epoch + 1,
+            'valid_loss_min': test_loss/(batch_idx+1),
+            'state_dict': combined_model.visual.state_dict(),
+            'optimizer': optimizer.state_dict(),
+        }
+
+        ehr_checkpoint = {
+            'epoch': epoch + 1,
+            'valid_loss_min': test_loss/(batch_idx+1),
+            'state_dict': combined_model.text.state_dict(),
+            'optimizer': optimizer.state_dict(),
+        }
+
+        # save checkpoint
+        
+
+        # # ## TODO: save the model if validation loss has decreased
+        if  test_loss/(batch_idx+1) <= valid_loss_min:
+            # save checkpoint as best model
+            model_checkpoints.save_ckp(img_checkpoint, True, './checkpoints/pretrained_img_model.pt')
+            model_checkpoints.save_ckp(ehr_checkpoint, True, './checkpoints/pretrained_ehr_model.pt')
+            valid_loss_min = test_loss/(batch_idx+1)
+
+        training_loss.append(train_loss/(batch_idx+1))
+        validation_loss.append(test_loss/(batch_idx+1))
+        print('train loss: {:.4f} test loss: {:.4f} valid_loss {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1),valid_loss_min))
+        print(logits_scale)
+        scheduler.step()
 
 
+    plot_metrics.plot_loss(epochs_list, training_loss,'Training Loss','./visualization/pretraining','training_loss.png')
+    plot_metrics.plot_loss(epochs_list, validation_loss,'Validation Loss' ,'./visualization/pretraining','validation_loss.png')
+
+if __name__ == '__main__':
+    import cProfile, pstats
+    profiler = cProfile.Profile()
+    profiler.enable()
+    train()
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('ncalls')
+    stats.print_stats()
 

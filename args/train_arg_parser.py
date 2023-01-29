@@ -31,7 +31,7 @@ class TrainArgParser(BaseArgParser):
                                  help='Epochs to step the LR when using multi_step LR scheduler.')
         self.parser.add_argument('--patience', type=int, default=10,
                                  help='Number of stagnant epochs before stepping LR.')
-        self.parser.add_argument('--num_epochs', type=int, default=300,
+        self.parser.add_argument('--num_epochs', type=int, default=1,
                                  help='Number of epochs to train. If 0, train forever.')
         self.parser.add_argument('--max_ckpts', type=int, default=2,
                                  help='Number of recent ckpts to keep before overwriting old ones.')

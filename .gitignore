@@ -2,3 +2,4 @@ slurm-logs/
 train-logs/
 series_list.pkl
 data-dir/xnet_kin_90.pth.tar
+data-dir/penet_best.pth.tar
