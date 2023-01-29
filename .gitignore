@@ -1,9 +1,4 @@
-.vscode
-checkpoints
-*.pt
-*.png
-__pycache__
-*.pyc
-*.ipynb
-visualization
-!visualization/*.py
+slurm-logs/
+train-logs/
+series_list.pkl
+data-dir/xnet_kin_90.pth.tar

@@ -42,6 +42,9 @@ class ClipLoss(nn.Module):
                 logits_per_image = logits_scale * all_image_features @ all_text_features.T
                 logits_per_text = logits_per_image.T
         else:
+            print("image_features",image_features.shape)
+            print("text_features",text_features.shape)
+            print("logits_scale",logits_scale.shape)
             logits_per_image = logits_scale * image_features @ text_features.T
             logits_per_text = logits_scale * text_features @ image_features.T
 

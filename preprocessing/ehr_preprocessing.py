@@ -14,15 +14,25 @@ def load_data(path):
     
     return X, y
 
-def feature_selection(Xtrain, ytrain, Xval, Xtest):
+# def feature_selection(Xtrain, ytrain, Xval, Xtest):
+#     lsvc = LinearSVC(C=0.01, penalty="l1", dual=False, random_state=0).fit(Xtrain, ytrain)
+#     model = SelectFromModel(lsvc, prefit=True)
+
+#     X_train_ehr = model.transform(Xtrain)
+#     X_val_ehr = model.transform(Xval)
+#     X_test_ehr = model.transform(Xtest)
+
+
+#     return X_train_ehr, X_val_ehr, X_test_ehr
+
+def feature_selection(Xtrain, ytrain, x_val, x_test):
     lsvc = LinearSVC(C=0.01, penalty="l1", dual=False, random_state=0).fit(Xtrain, ytrain)
     model = SelectFromModel(lsvc, prefit=True)
 
     X_train_ehr = model.transform(Xtrain)
-    X_val_ehr = model.transform(Xval)
-    X_test_ehr = model.transform(Xtest)
+    X_val_ehr = model.transform(x_val)
+    X_test_ehr = model.transform(x_test)
 
-    #print(X_train_ehr.shape, X_test_ehr.dtype)
 
     return X_train_ehr, X_val_ehr, X_test_ehr
 
