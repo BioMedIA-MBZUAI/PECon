@@ -15,7 +15,7 @@ class BaseArgParser(object):
         self.parser = argparse.ArgumentParser(description='PENet base args')
         self.parser.add_argument('--model', type=str, choices=('PENet', 'PENetClassifier'), default='PENetClassifier',
                                  help='Model to use. PENetClassifier or PENet.')
-        self.parser.add_argument('--batch_size', type=int, default=6, help='Batch size.')
+        self.parser.add_argument('--batch_size', type=int, default=1, help='Batch size.')
         self.parser.add_argument('--ckpt_path', type=str, default='data-dir/penet_best.pth.tar',
                                  help='Path to checkpoint to load. If empty, start from scratch.')
         self.parser.add_argument('--data_dir', type=str, required=True,

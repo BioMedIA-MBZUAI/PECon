@@ -13,7 +13,7 @@ from models import model_checkpoints
 from args import TrainArgParser
 torch.manual_seed(0)
 device = "cpu" if torch.cuda.is_available() else "cuda"
-print("device",device)
+print("device: ",device)
 
 
 #loading data
@@ -104,11 +104,11 @@ def train():
                 # for key, value in train_labels.items():
                 #     train_labels[key] = train_labels[key].to(device)
 
-                print(img_train_data.device, ehr_train_data.device)
+                # print(img_train_data.device, ehr_train_data.device)
                 f1,f2, logits_scale = combined_model.forward(img_train_data.float(), ehr_train_data.float())
 
                 optimizer.zero_grad()
-                loss = criterion(f1, f2.squeeze(), logits_scale)
+                loss = criterion(f1, f2.squeeze(1), logits_scale)
                 
                 loss.backward()
                 optimizer.step()
@@ -123,12 +123,11 @@ def train():
                     img_val_data = img_val_data.to(device)
                     ehr_val_data = ehr_val_data.to(device)
                     # val_labels = val_labels.to(device)
-                
-                    
+                     
                     f1,f2, logits_scale = combined_model.forward(img_val_data.float(), ehr_val_data.float())
 
-
-                    loss = criterion(f1, f2, logits_scale)
+                    print(f1.shape, f2.shape, logits_scale.shape)
+                    loss = criterion(f1, f2.squeeze(), logits_scale)
                     
                     test_loss+=loss.item()
 

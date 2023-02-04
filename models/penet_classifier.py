@@ -75,7 +75,8 @@ class PENetClassifier(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
-
+        # print("input to penet classifier: ",x.shape)
+        x = x.squeeze(0).unsqueeze(1)
         # Expand input (allows pre-training on RGB videos, fine-tuning on Hounsfield Units)
         if x.size(1) < self.num_channels:
             x = x.expand(-1, self.num_channels // x.size(1), -1, -1, -1)
@@ -89,7 +90,6 @@ class PENetClassifier(nn.Module):
 
         # Classifier
         output = self.classifier(x)
-        print(output.shape)
         # print(x.shape)
 
         return output

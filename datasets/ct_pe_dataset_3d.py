@@ -103,40 +103,61 @@ class CTPEDataset3d(BaseCTDataset):
             return False
 
         return True
+    
     def __len__(self):
-        return len(self.window_to_series_idx)
+        # return len(self.window_to_series_idx)
+        return len(self.ctpe_list)
 
     def __getitem__(self, idx):
         # Choose ctpe and window within ctpe
-        ctpe_idx = self.window_to_series_idx[idx]
-        ctpe = self.ctpe_list[ctpe_idx]
-        # ehr_record = self.ehr_data[self.ehr_data['study_nums']==ctpe.study_num].values 
+        # raise Exception("here")
+        # ctpe_idx = self.window_to_series_idx[idx]
+        ctpe = self.ctpe_list[idx]
+        # print('CTPE num slices: ', ctpe.num_slices)
+
         ehr_record = self.ehr_data[self.ehr_data['study_nums']==ctpe.study_num].drop(['study_nums'], axis=1).values
+        num_subvolumes = ctpe.num_slices // self.num_slices + (1 if ctpe.num_slices % self.num_slices > 0 else 0)
+        # print('num_subvolumes: ', num_subvolumes)
+        # print('ctpe.num_slices: ', ctpe.num_slices)
+        # print('self.num_slices: ', self.num_slices)
+
+        subvolumes = []
+        for i in range(num_subvolumes):
+            start_idx = i * self.num_slices
+            subvolume = self._load_volume(ctpe, start_idx)
+            subvolume = self._transform(subvolume)
+            subvolumes.append(subvolume)
+        
+        subvolumes = torch.stack(subvolumes, dim=0)
+        # print('subvolumes shape: ', subvolumes.shape)
+        
+        is_abnormal = torch.tensor([self._is_abnormal(ctpe, start_idx)], dtype=torch.float32)
+
         # print("here ",ehr_record.shape)
          
 
-        if self.abnormal_prob is not None and random.random() < self.abnormal_prob:
-            # Force aneurysm window with probability `abnormal_prob`.
-            if not ctpe.is_positive:
-                ctpe_idx = random.choice(self.positive_idxs)
-                ctpe = self.ctpe_list[ctpe_idx]
-            start_idx = self._get_abnormal_start_idx(ctpe, do_center=self.do_center_abnormality)
-        elif self.use_hem:
-            # Draw from distribution that weights hard negatives more heavily than easy examples
-            ctpe_idx, start_idx = self.hard_example_miner.sample()
-            ctpe = self.ctpe_list[ctpe_idx]
-        else:
+        # if self.abnormal_prob is not None and random.random() < self.abnormal_prob:
+        #     # Force aneurysm window with probability `abnormal_prob`.
+        #     if not ctpe.is_positive:
+        #         ctpe_idx = random.choice(self.positive_idxs)
+        #         ctpe = self.ctpe_list[ctpe_idx]
+        #     start_idx = self._get_abnormal_start_idx(ctpe, do_center=self.do_center_abnormality)
+        # elif self.use_hem:
+        #     # Draw from distribution that weights hard negatives more heavily than easy examples
+        #     ctpe_idx, start_idx = self.hard_example_miner.sample()
+        #     ctpe = self.ctpe_list[ctpe_idx]
+        # else:
             # Get sequential windows through the whole series
             # TODO
-            start_idx = (idx - self.series_to_window_idx[ctpe_idx]) * self.num_slices
+            # start_idx = (idx - self.series_to_window_idx[ctpe_idx]) * self.num_slices
 
-        if self.do_jitter:
-            # Randomly jitter start offset by num_slices / 2
-            start_idx += random.randint(-self.num_slices // 2, self.num_slices // 2)
-            start_idx = min(max(start_idx, 0), len(ctpe) - self.num_slices)
+        # if self.do_jitter:
+        #     # Randomly jitter start offset by num_slices / 2
+        #     start_idx += random.randint(-self.num_slices // 2, self.num_slices // 2)
+        #     start_idx = min(max(start_idx, 0), len(ctpe) - self.num_slices)
 
-        volume = self._load_volume(ctpe, start_idx)
-        volume = self._transform(volume)
+        # volume = self._load_volume(ctpe, start_idx)
+        # volume = self._transform(volume)
 
         is_abnormal = torch.tensor([self._is_abnormal(ctpe, start_idx)], dtype=torch.float32)
 
@@ -145,9 +166,54 @@ class CTPEDataset3d(BaseCTDataset):
                   'study_num': ctpe.study_num,
                   'dset_path': str(ctpe.study_num),
                   'slice_idx': start_idx,
-                  'series_idx': ctpe_idx}
+                  'series_idx': idx}
+        
+        # print('subvolumes shape: ', subvolumes.shape)
 
-        return volume, ehr_record, target
+        return subvolumes.squeeze(1), ehr_record, target
+
+
+        # Choose ctpe and window within ctpe
+        # ctpe_idx = self.window_to_series_idx[idx]
+        # ctpe = self.ctpe_list[ctpe_idx]
+        # # ehr_record = self.ehr_data[self.ehr_data['study_nums']==ctpe.study_num].values 
+        # ehr_record = self.ehr_data[self.ehr_data['study_nums']==ctpe.study_num].drop(['study_nums'], axis=1).values
+        # # print("here ",ehr_record.shape)
+         
+
+        # if self.abnormal_prob is not None and random.random() < self.abnormal_prob:
+        #     # Force aneurysm window with probability `abnormal_prob`.
+        #     if not ctpe.is_positive:
+        #         ctpe_idx = random.choice(self.positive_idxs)
+        #         ctpe = self.ctpe_list[ctpe_idx]
+        #     start_idx = self._get_abnormal_start_idx(ctpe, do_center=self.do_center_abnormality)
+        # elif self.use_hem:
+        #     # Draw from distribution that weights hard negatives more heavily than easy examples
+        #     ctpe_idx, start_idx = self.hard_example_miner.sample()
+        #     ctpe = self.ctpe_list[ctpe_idx]
+        # else:
+        #     # Get sequential windows through the whole series
+        #     # TODO
+        #     start_idx = (idx - self.series_to_window_idx[ctpe_idx]) * self.num_slices
+
+        # if self.do_jitter:
+        #     # Randomly jitter start offset by num_slices / 2
+        #     start_idx += random.randint(-self.num_slices // 2, self.num_slices // 2)
+        #     start_idx = min(max(start_idx, 0), len(ctpe) - self.num_slices)
+
+        # volume = self._load_volume(ctpe, start_idx)
+        # volume = self._transform(volume)
+
+        # is_abnormal = torch.tensor([self._is_abnormal(ctpe, start_idx)], dtype=torch.float32)
+
+        # # Pass series info to combine window-level predictions
+        # target = {'is_abnormal': is_abnormal,
+        #           'study_num': ctpe.study_num,
+        #           'dset_path': str(ctpe.study_num),
+        #           'slice_idx': start_idx,
+        #           'series_idx': ctpe_idx}
+
+        # return volume, ehr_record, target
 
     def get_series_label(self, series_idx):
         """Get a floating point label for a series at given index."""

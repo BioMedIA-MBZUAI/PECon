@@ -11,7 +11,7 @@
 #SBATCH --qos=gpu-8                 # To enable the use of up to 8 GPUs
 
 hostname
-python contrastive_pretraining.py --data_dir /l/users/salwa.khatib/penet/data/ \
+python -u contrastive_pretraining.py --data_dir /l/users/salwa.khatib/penet/data/ \
                                     --name debug \
                                     --num_epochs 100 \
                                     --dataset pe \

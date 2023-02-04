@@ -42,9 +42,9 @@ class ClipLoss(nn.Module):
                 logits_per_image = logits_scale * all_image_features @ all_text_features.T
                 logits_per_text = logits_per_image.T
         else:
-            print("image_features",image_features.shape)
-            print("text_features",text_features.shape)
-            print("logits_scale",logits_scale.shape)
+            # print("image_features",image_features.shape)
+            # print("text_features",text_features.shape)
+            # print("logits_scale",logits_scale.shape)
             logits_per_image = logits_scale * image_features @ text_features.T
             logits_per_text = logits_scale * text_features @ image_features.T
 
@@ -60,8 +60,10 @@ class ClipLoss(nn.Module):
         else:
             labels = self.labels[device]
 
+        # print("logits_per_image: ",logits_per_image.shape)
+        # print("labels: ",labels.shape)
         total_loss = (
-            F.cross_entropy(logits_per_image, labels) +
-            F.cross_entropy(logits_per_text, labels)
+            F.cross_entropy(logits_per_image.unsqueeze(1), labels) + #.unsqueeze(1)
+            F.cross_entropy(logits_per_text.unsqueeze(1), labels) #.unsqueeze(1)
             ) / 2
         return total_loss

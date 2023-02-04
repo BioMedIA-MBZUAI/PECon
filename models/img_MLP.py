@@ -25,6 +25,6 @@ class IMG_MLP(nn.Module):
         z1 = self.dropout1(z1)
         z1 = F.relu(self.fc2(z1))
         z1 = (self.fc3(z1))
-        print("z1.shape: ", z1.shape)
+        # print("z1.shape: ", z1.shape)
         
         return z1
