@@ -13,7 +13,7 @@
 hostname
 python -u contrastive_pretraining.py --data_dir /l/users/salwa.khatib/penet/data/ \
                                     --name debug \
-                                    --num_epochs 100 \
+                                    --num_epochs 1 \
                                     --dataset pe \
                                     --use_pretrained True \
                                     --ckpt_path data-dir/penet_best.pth.tar

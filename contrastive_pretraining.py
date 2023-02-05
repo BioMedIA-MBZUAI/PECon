@@ -1,6 +1,7 @@
 from dataset.MultimodalDataset import MultimodalDataset
 from preprocessing import img_preprocessing, ehr_preprocessing, multimodal_preprocessing
 import torch
+import os
 import models
 from datasets import CTPEDataset3d
 from models.CLIP import CLIP
@@ -12,8 +13,9 @@ from visualization import plot_metrics
 from models import model_checkpoints
 from args import TrainArgParser
 torch.manual_seed(0)
-device = "cpu" if torch.cuda.is_available() else "cuda"
-print("device: ",device)
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print("device: ", device)
 
 
 #loading data
@@ -82,19 +84,23 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.1)
 
 #train
 epochs= args_.num_epochs
+print('[INFO] Training for {} epochs...'.format(epochs))
 
-valid_loss_min = 20
-epochs_list=[]
-training_loss=[]
-validation_loss=[]
 
 def train():
+    valid_loss_min = 20
+    epochs_list=[]
+    training_loss=[]
+    validation_loss=[]
+
     for epoch in range(0, epochs):
         train_loss=0
         test_loss=0
         epochs_list.append(epoch)
         print("epoch number: {0}".format(epoch))
+
         combined_model.train()
+
         with tqdm(train_loader, unit = 'batch') as tepoch:
             for batch_idx, (img_train_data, ehr_train_data, train_labels) in enumerate(tepoch):
 
@@ -126,8 +132,8 @@ def train():
                      
                     f1,f2, logits_scale = combined_model.forward(img_val_data.float(), ehr_val_data.float())
 
-                    print(f1.shape, f2.shape, logits_scale.shape)
-                    loss = criterion(f1, f2.squeeze(), logits_scale)
+                    # print(f1.shape, f2.shape, logits_scale.shape)
+                    loss = criterion(f1, f2.squeeze(1), logits_scale)
                     
                     test_loss+=loss.item()
 
@@ -137,31 +143,36 @@ def train():
         img_checkpoint = {
             'epoch': epoch + 1,
             'valid_loss_min': test_loss/(batch_idx+1),
-            'state_dict': combined_model.visual.state_dict(),
+            'state_dict': combined_model.module.visual.state_dict(),
             'optimizer': optimizer.state_dict(),
         }
 
         ehr_checkpoint = {
             'epoch': epoch + 1,
             'valid_loss_min': test_loss/(batch_idx+1),
-            'state_dict': combined_model.text.state_dict(),
+            'state_dict': combined_model.module.text.state_dict(),
             'optimizer': optimizer.state_dict(),
         }
 
         # save checkpoint
         
+        MYDIR = ("./checkpoints/")
+        CHECK_FOLDER = os.path.isdir(MYDIR)
+
+        # If folder doesn't exist, then create it.
+        if not CHECK_FOLDER:
+            os.makedirs(MYDIR)
 
         # # ## TODO: save the model if validation loss has decreased
         if  test_loss/(batch_idx+1) <= valid_loss_min:
             # save checkpoint as best model
-            model_checkpoints.save_ckp(img_checkpoint, True, './checkpoints/pretrained_img_model.pt')
-            model_checkpoints.save_ckp(ehr_checkpoint, True, './checkpoints/pretrained_ehr_model.pt')
+            model_checkpoints.save_ckp(img_checkpoint, True, os.path.join(MYDIR,'pretrained_img_model.pt'))
+            model_checkpoints.save_ckp(ehr_checkpoint, True, os.path.join(MYDIR,'pretrained_ehr_model.pt'))
             valid_loss_min = test_loss/(batch_idx+1)
 
         training_loss.append(train_loss/(batch_idx+1))
         validation_loss.append(test_loss/(batch_idx+1))
         print('train loss: {:.4f} test loss: {:.4f} valid_loss {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1),valid_loss_min))
-        print(logits_scale)
         scheduler.step()
 
 

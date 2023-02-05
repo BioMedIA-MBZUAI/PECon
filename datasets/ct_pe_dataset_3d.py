@@ -107,6 +107,7 @@ class CTPEDataset3d(BaseCTDataset):
     def __len__(self):
         # return len(self.window_to_series_idx)
         return len(self.ctpe_list)
+        # return 2
 
     def __getitem__(self, idx):
         # Choose ctpe and window within ctpe

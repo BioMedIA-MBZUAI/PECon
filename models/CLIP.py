@@ -25,7 +25,7 @@ class CLIP(nn.Module):
 
     def forward(self, image, text):
         output = self.penetbackbone(image)
-        image_features = self.encode_image(output, normalize=True)
-        mean_image_features = image_features.mean(dim=0)
+        mean_image_features = output.mean(dim=0)
+        image_features = self.encode_image(mean_image_features, normalize=True)
         text_features = self.encode_text(text, normalize=True)
-        return mean_image_features, text_features, self.logit_scale.exp()
+        return image_features, text_features, self.logit_scale.exp()
