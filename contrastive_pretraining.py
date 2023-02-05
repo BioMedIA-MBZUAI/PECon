@@ -85,6 +85,7 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.1)
 #train
 epochs= args_.num_epochs
 print('[INFO] Training for {} epochs...'.format(epochs))
+print('[INFO] Clip batch size: {}'.format(args_.clip_bs))
 
 
 def train():
@@ -100,7 +101,9 @@ def train():
         print("epoch number: {0}".format(epoch))
 
         combined_model.train()
-
+        bs_counter = 0
+        f1s = []
+        f2s = []
         with tqdm(train_loader, unit = 'batch') as tepoch:
             for batch_idx, (img_train_data, ehr_train_data, train_labels) in enumerate(tepoch):
 
@@ -114,12 +117,24 @@ def train():
                 f1,f2, logits_scale = combined_model.forward(img_train_data.float(), ehr_train_data.float())
 
                 optimizer.zero_grad()
-                loss = criterion(f1, f2.squeeze(1), logits_scale)
-                
-                loss.backward()
-                optimizer.step()
-                
-                train_loss += loss.item()
+
+                # CLIP Loss
+                bs_counter += 1
+                f1s.append(f1)
+                f2s.append(f2.squeeze(1))
+                if bs_counter == args_.clip_bs:
+                    print("[INFO] Time to compute clip loss...")
+                    bs_counter = 0
+                    f1 = torch.cat(f1s, dim=0)
+                    f2 = torch.cat(f2s, dim=1)
+                    f1s = []
+                    f2s = []
+                    loss = criterion(f1, f2, logits_scale)
+                    
+                    loss.backward()
+                    optimizer.step()
+                    
+                    train_loss += loss.item()
         
 
         with torch.no_grad():
@@ -175,6 +190,13 @@ def train():
         print('train loss: {:.4f} test loss: {:.4f} valid_loss {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1),valid_loss_min))
         scheduler.step()
 
+
+    MYDIR = ("./visualization/pretraining")
+    CHECK_FOLDER = os.path.isdir(MYDIR)
+
+    # If folder doesn't exist, then create it.
+    if not CHECK_FOLDER:
+        os.makedirs(MYDIR)
 
     plot_metrics.plot_loss(epochs_list, training_loss,'Training Loss','./visualization/pretraining','training_loss.png')
     plot_metrics.plot_loss(epochs_list, validation_loss,'Validation Loss' ,'./visualization/pretraining','validation_loss.png')
