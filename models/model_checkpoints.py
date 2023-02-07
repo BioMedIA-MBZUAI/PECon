@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch
 torch.manual_seed(0)
 
-def save_ckp(state, is_best, checkpoint_path):
+def save_ckp(state,  checkpoint_path):
     """
     state: checkpoint we want to save
     is_best: is this the best checkpoint; min validation loss
@@ -14,8 +14,10 @@ def save_ckp(state, is_best, checkpoint_path):
     # save checkpoint data to the path given, checkpoint_path
     torch.save(state, f_path)
     # if it is a best model, min validation loss
-    if is_best:
-        torch.save(state, f_path)
+    # if is_best:
+    #     torch.save(state, f_path)
+    # save optimizer parameters as well
+    # torch.save(optimizer.state_dict(), f_path + '_optimizer.pt')
 
 
 def load_ckp(checkpoint_fpath, model, optimizer = None):
@@ -31,8 +33,9 @@ def load_ckp(checkpoint_fpath, model, optimizer = None):
     model.load_state_dict(checkpoint['state_dict'])
     
     # initialize optimizer from checkpoint to optimizer
-    
-    #optimizer.load_state_dict(checkpoint['optimizer'])
+    if optimizer not in [None, False]:
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        return model, optimizer
     
     # initialize valid_loss_min from checkpoint to valid_loss_min
     

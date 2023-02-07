@@ -17,6 +17,8 @@ torch.manual_seed(0)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("device: ", device)
 
+EXP_NAME = 'clipAvg400/'
+
 
 #loading data
 # X_img_train_processed, X_ehr_train_processed, y_train = multimodal_preprocessing.load_data('/home/santosh.sanjeev/PE-Research/RadFusion-Dataset/dataset/multimodalpulmonaryembolismdataset/CT_v2/features_train.csv', '/home/santosh.sanjeev/PE-Research/RadFusion-Dataset/dataset/multimodalpulmonaryembolismdataset/new_data_csv/vision&emr_train_ed.csv')
@@ -135,22 +137,23 @@ def train():
                     optimizer.step()
                     
                     train_loss += loss.item()
+                    print("[info] train loss: {0}".format(train_loss))
         
+        if(args_.epochs_per_eval%5==0):
+            with torch.no_grad():
+                combined_model.eval()
+                with tqdm(val_loader, unit ="batch") as tepoch:
+                    for batch_idx ,(img_val_data, ehr_val_data, val_labels) in enumerate(tepoch):
+                        img_val_data = img_val_data.to(device)
+                        ehr_val_data = ehr_val_data.to(device)
+                        # val_labels = val_labels.to(device)
+                        
+                        f1,f2, logits_scale = combined_model.forward(img_val_data.float(), ehr_val_data.float())
 
-        with torch.no_grad():
-            combined_model.eval()
-            with tqdm(val_loader, unit ="batch") as tepoch:
-                for batch_idx ,(img_val_data, ehr_val_data, val_labels) in enumerate(tepoch):
-                    img_val_data = img_val_data.to(device)
-                    ehr_val_data = ehr_val_data.to(device)
-                    # val_labels = val_labels.to(device)
-                     
-                    f1,f2, logits_scale = combined_model.forward(img_val_data.float(), ehr_val_data.float())
-
-                    # print(f1.shape, f2.shape, logits_scale.shape)
-                    loss = criterion(f1, f2.squeeze(1), logits_scale)
-                    
-                    test_loss+=loss.item()
+                        # print(f1.shape, f2.shape, logits_scale.shape)
+                        loss = criterion(f1, f2.squeeze(1), logits_scale)
+                        
+                        test_loss+=loss.item()
 
                     
 
@@ -171,7 +174,7 @@ def train():
 
         # save checkpoint
         
-        MYDIR = ("./checkpoints/")
+        MYDIR = os.path.join("./checkpoints/", EXP_NAME)
         CHECK_FOLDER = os.path.isdir(MYDIR)
 
         # If folder doesn't exist, then create it.
@@ -181,32 +184,32 @@ def train():
         # # ## TODO: save the model if validation loss has decreased
         if  test_loss/(batch_idx+1) <= valid_loss_min:
             # save checkpoint as best model
-            model_checkpoints.save_ckp(img_checkpoint, True, os.path.join(MYDIR,'pretrained_img_model.pt'))
-            model_checkpoints.save_ckp(ehr_checkpoint, True, os.path.join(MYDIR,'pretrained_ehr_model.pt'))
+            model_checkpoints.save_ckp(img_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_img_model.pt"))
+            model_checkpoints.save_ckp(ehr_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_ehr_model.pt"))
             valid_loss_min = test_loss/(batch_idx+1)
 
         training_loss.append(train_loss/(batch_idx+1))
         validation_loss.append(test_loss/(batch_idx+1))
-        print('train loss: {:.4f} test loss: {:.4f} valid_loss {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1),valid_loss_min))
+        print('\ntrain loss: {:.4f} test loss: {:.4f} valid_loss {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1),valid_loss_min))
         scheduler.step()
 
 
-    MYDIR = ("./visualization/pretraining")
+    MYDIR = os.path.join("./visualization/pretraining/", EXP_NAME)
     CHECK_FOLDER = os.path.isdir(MYDIR)
 
     # If folder doesn't exist, then create it.
     if not CHECK_FOLDER:
         os.makedirs(MYDIR)
 
-    plot_metrics.plot_loss(epochs_list, training_loss,'Training Loss','./visualization/pretraining','training_loss.png')
-    plot_metrics.plot_loss(epochs_list, validation_loss,'Validation Loss' ,'./visualization/pretraining','validation_loss.png')
+    plot_metrics.plot_loss(epochs_list, training_loss,'Training Loss',MYDIR,'training_loss.png')
+    plot_metrics.plot_loss(epochs_list, validation_loss,'Validation Loss' ,MYDIR,'validation_loss.png')
 
 if __name__ == '__main__':
-    import cProfile, pstats
-    profiler = cProfile.Profile()
-    profiler.enable()
+    # import cProfile, pstats
+    # profiler = cProfile.Profile()
+    # profiler.enable()
     train()
-    profiler.disable()
-    stats = pstats.Stats(profiler).sort_stats('ncalls')
-    stats.print_stats()
+    # profiler.disable()
+    # stats = pstats.Stats(profiler).sort_stats('ncalls')
+    # stats.print_stats()
 

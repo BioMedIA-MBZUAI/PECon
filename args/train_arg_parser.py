@@ -12,7 +12,7 @@ class TrainArgParser(BaseArgParser):
                                  help='Number of epochs between saving a checkpoint to save_dir.')
         self.parser.add_argument('--iters_per_print', type=int, default=4,
                                  help='Number of iterations between printing loss to the console and TensorBoard.')
-        self.parser.add_argument('--epochs_per_eval', type=int, default=1,
+        self.parser.add_argument('--epochs_per_eval', type=int, default=5,
                                  help='Number of epochs between evaluating model on the validation set.')
         self.parser.add_argument('--iters_per_visual', type=int, default=80,
                                  help='Number of iterations between visualizing training examples.')
@@ -31,7 +31,7 @@ class TrainArgParser(BaseArgParser):
                                  help='Epochs to step the LR when using multi_step LR scheduler.')
         self.parser.add_argument('--patience', type=int, default=10,
                                  help='Number of stagnant epochs before stepping LR.')
-        self.parser.add_argument('--num_epochs', type=int, default=1,
+        self.parser.add_argument('--num_epochs', type=int, default=100,
                                  help='Number of epochs to train. If 0, train forever.')
         self.parser.add_argument('--max_ckpts', type=int, default=2,
                                  help='Number of recent ckpts to keep before overwriting old ones.')
