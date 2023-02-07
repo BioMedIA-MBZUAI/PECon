@@ -127,17 +127,17 @@ def train():
                 if bs_counter == args_.clip_bs:
                     print("[INFO] Time to compute clip loss...")
                     bs_counter = 0
-                    f1 = torch.cat(f1s, dim=0)
-                    f2 = torch.cat(f2s, dim=1)
+                    f1 = torch.stack(f1s)
+                    f2 = torch.stack(f2s)
                     f1s = []
                     f2s = []
-                    loss = criterion(f1, f2, logits_scale)
+                    loss = criterion(f1, f2.squeeze(1), logits_scale)
                     
                     loss.backward()
                     optimizer.step()
                     
                     train_loss += loss.item()
-                    print("[info] train loss: {0}".format(train_loss))
+                    print("\n[info] train loss: {0}".format(train_loss))
         
         if(args_.epochs_per_eval%5==0):
             with torch.no_grad():

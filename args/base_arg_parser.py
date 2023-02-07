@@ -70,7 +70,7 @@ class BaseArgParser(object):
                                  help='Probability of hiding squares in hide-and-seek.')
         self.parser.add_argument('--hide_level', type=str, choices=('window', 'image'), default='window',
                                  help='Level of hiding squares in hide-and-seek.')
-        self.parser.add_argument('--clip_bs', type=int, default=128,
+        self.parser.add_argument('--clip_bs', type=int, default=1,
                                  help='Batch size for clip-level evaluation.')
         self.parser.add_argument('--only_topmost_window', type=util.str_to_bool, default=False,
                                  help='If true, only use the topmost window in each series.')
