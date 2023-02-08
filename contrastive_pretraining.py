@@ -87,6 +87,7 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.1)
 #train
 epochs= args_.num_epochs
 print('[INFO] Training for {} epochs...'.format(epochs))
+print("[INFO] Epochs per evaluation: {}".format(args_.epochs_per_eval))
 print('[INFO] Clip batch size: {}'.format(args_.clip_bs))
 
 
@@ -95,6 +96,8 @@ def train():
     epochs_list=[]
     training_loss=[]
     validation_loss=[]
+    loss_computations = -(-len(train_set) / args_.clip_bs)
+    print("[INFO] Number of loss computations per epoch: {}".format(loss_computations))
 
     for epoch in range(0, epochs):
         train_loss=0
@@ -124,8 +127,9 @@ def train():
                 bs_counter += 1
                 f1s.append(f1)
                 f2s.append(f2.squeeze(1))
-                if bs_counter == args_.clip_bs:
-                    print("[INFO] Time to compute clip loss...")
+                if bs_counter == args_.clip_bs or batch_idx == len(train_loader) - 1:
+
+                    print("\n[INFO] Time to compute clip loss...")
                     bs_counter = 0
                     f1 = torch.stack(f1s)
                     f2 = torch.stack(f2s)
@@ -137,11 +141,15 @@ def train():
                     optimizer.step()
                     
                     train_loss += loss.item()
-                    print("\n[info] train loss: {0}".format(train_loss))
+                    print("\n[INFO] train loss: {0}".format(train_loss))
         
-        if(args_.epochs_per_eval%5==0):
+        if(epoch % args_.epochs_per_eval==0):
+            print("\n[INFO] Starting validation...")
             with torch.no_grad():
                 combined_model.eval()
+                f1s = []
+                f2s = []
+                
                 with tqdm(val_loader, unit ="batch") as tepoch:
                     for batch_idx ,(img_val_data, ehr_val_data, val_labels) in enumerate(tepoch):
                         img_val_data = img_val_data.to(device)
@@ -150,14 +158,25 @@ def train():
                         
                         f1,f2, logits_scale = combined_model.forward(img_val_data.float(), ehr_val_data.float())
 
-                        # print(f1.shape, f2.shape, logits_scale.shape)
-                        loss = criterion(f1, f2.squeeze(1), logits_scale)
-                        
-                        test_loss+=loss.item()
+                        bs_counter += 1
+                        f1s.append(f1)
+                        f2s.append(f2.squeeze(1))
 
-                    
+                        if(bs_counter == args_.clip_bs or batch_idx == len(val_loader) - 1):
+                            print("\n[INFO] Time to compute clip loss...")
+                            bs_counter = 0
+                            f1 = torch.stack(f1s)
+                            f2 = torch.stack(f2s)
+                            f1s = []
+                            f2s = []
 
+                            # print(f1.shape, f2.shape, logits_scale.shape)
+                            loss = criterion(f1, f2.squeeze(1), logits_scale)
+                            
+                            test_loss+=loss.item()
+                            print("\n[INFO] val loss: {0}".format(test_loss))
 
+  
         img_checkpoint = {
             'epoch': epoch + 1,
             'valid_loss_min': test_loss/(batch_idx+1),
@@ -190,7 +209,7 @@ def train():
 
         training_loss.append(train_loss/(batch_idx+1))
         validation_loss.append(test_loss/(batch_idx+1))
-        print('\ntrain loss: {:.4f} test loss: {:.4f} valid_loss {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1),valid_loss_min))
+        print('\naverage train loss: {:.4f} average validation loss: {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1)))
         scheduler.step()
 
 

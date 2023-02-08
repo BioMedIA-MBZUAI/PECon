@@ -60,8 +60,6 @@ class ClipLoss(nn.Module):
         else:
             labels = self.labels[device]
 
-        # print("logits_per_image: ",logits_per_image.shape)
-        # print("labels: ",labels.shape)
         total_loss = (
             F.cross_entropy(logits_per_image, labels) + #.unsqueeze(1)
             F.cross_entropy(logits_per_text, labels) #.unsqueeze(1)
