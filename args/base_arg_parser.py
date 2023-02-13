@@ -15,6 +15,16 @@ class BaseArgParser(object):
         self.parser = argparse.ArgumentParser(description='PENet base args')
         self.parser.add_argument('--model', type=str, choices=('PENet', 'PENetClassifier'), default='PENetClassifier',
                                  help='Model to use. PENetClassifier or PENet.')
+        self.parser.add_argument('--resume_training', type=util.str_to_bool, default=False,
+                                 help='If True, resume training')
+        self.parser.add_argument('--unfreeze_penet', type=util.str_to_bool, default=False,
+                                 help='If True, penet will be trained')
+        self.parser.add_argument('--ehr_resume_path', type=str, default=None,
+                                 help='Weights of ehr model used to resume training')
+        self.parser.add_argument('--img_resume_path', type=str, default=None,
+                                 help='Weights of img model used to resume training')
+        self.parser.add_argument('--penet_resume_path', type=str, default=None,
+                                 help='Weights of penet model used to resume training')
         self.parser.add_argument('--batch_size', type=int, default=1, help='Batch size.')
         self.parser.add_argument('--ckpt_path', type=str, default='data-dir/penet_best.pth.tar',
                                  help='Path to checkpoint to load. If empty, start from scratch.')
@@ -44,7 +54,7 @@ class BaseArgParser(object):
         self.parser.add_argument('--num_slices', default=24, type=int, help='Number of slices to use per study.')
         self.parser.add_argument('--num_visuals', type=int, default=4,
                                  help='Maximum number of visuals per evaluation.')
-        self.parser.add_argument('--num_workers', default=12, type=int, help='Number of threads for the DataLoader.')
+        self.parser.add_argument('--num_workers', default=32, type=int, help='Number of threads for the DataLoader.')
         self.parser.add_argument('--agg_method', type=str, default='', choices=('max', 'mean', 'logreg', ''),
                                  help='Method for aggregating window-level predictions to a single prediction.')
         self.parser.add_argument('--save_dir', type=str, default='../ckpts/',
@@ -70,7 +80,7 @@ class BaseArgParser(object):
                                  help='Probability of hiding squares in hide-and-seek.')
         self.parser.add_argument('--hide_level', type=str, choices=('window', 'image'), default='window',
                                  help='Level of hiding squares in hide-and-seek.')
-        self.parser.add_argument('--clip_bs', type=int, default=1,
+        self.parser.add_argument('--clip_bs', type=int, default=128,
                                  help='Batch size for clip-level evaluation.')
         self.parser.add_argument('--only_topmost_window', type=util.str_to_bool, default=False,
                                  help='If true, only use the topmost window in each series.')
@@ -78,7 +88,7 @@ class BaseArgParser(object):
                                  help='Evaluation mode for reporting metrics.')
         self.parser.add_argument('--do_classify', type=util.str_to_bool, default=False,
                                  help='If True, perform classification.')
-        self.parser.add_argument('--pe_types', type=eval, default='["central", "segmental", "subsegmental"]',
+        self.parser.add_argument('--pe_types', type=eval, default='["central", "segmental"]',
                                  help='Types of PE to include.')
         self.is_training = None
 
@@ -116,7 +126,7 @@ class BaseArgParser(object):
         args.gpu_ids = util.args_to_list(args.gpu_ids, allow_empty=True, arg_type=int, allow_negative=False)
         if len(args.gpu_ids) > 0 and torch.cuda.is_available():
             # Set default GPU for `tensor.to('cuda')`
-            torch.cuda.set_device(args.gpu_ids[0])
+            # torch.cuda.set_device(args.gpu_ids[0])
             args.device = 'cuda'
             cudnn.benchmark = args.cudnn_benchmark
         else:
