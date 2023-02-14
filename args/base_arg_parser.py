@@ -32,8 +32,8 @@ class BaseArgParser(object):
                                  help='Path to data directory with both normal and aneurysm studies.')
         self.parser.add_argument('--pkl_path', type=str, default='',
                                  help='Path to pickled CTSeries list. Defaults to data_dir/series_list.pkl')
-        self.parser.add_argument('--ehr_path', type=str, default='data-dir/ehr-new.csv',
-                                 help='Path to ehr csv data. Defaults to data-dir/ehr-new.csv')
+        self.parser.add_argument('--ehr_path', type=str, default='data-dir/ehr_39_normalized.csv',
+                                 help='Path to ehr csv data. Defaults to MultiModalFusion/data-dir/ehr_39_normalized.csv')
         self.parser.add_argument('--gpu_ids', type=str, default='0',
                                  help='Comma-separated list of GPU IDs. Use -1 for CPU.')
         self.parser.add_argument('--init_method', type=str, default='kaiming', choices=('kaiming', 'normal', 'xavier'),
@@ -80,7 +80,7 @@ class BaseArgParser(object):
                                  help='Probability of hiding squares in hide-and-seek.')
         self.parser.add_argument('--hide_level', type=str, choices=('window', 'image'), default='window',
                                  help='Level of hiding squares in hide-and-seek.')
-        self.parser.add_argument('--clip_bs', type=int, default=128,
+        self.parser.add_argument('--clip_bs', type=int, default=4,
                                  help='Batch size for clip-level evaluation.')
         self.parser.add_argument('--only_topmost_window', type=util.str_to_bool, default=False,
                                  help='If true, only use the topmost window in each series.')

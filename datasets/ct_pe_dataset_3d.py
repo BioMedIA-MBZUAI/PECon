@@ -54,6 +54,8 @@ class CTPEDataset3d(BaseCTDataset):
         # Load EHR records
         self.ehr_data = pd.read_csv(args.ehr_path)
         self.ehr_data = self.ehr_data[self.ehr_data['phase']==self.phase].iloc[:,:-1]
+        self.ehr_data = self.ehr_data.iloc[:,1:]
+        #print('ehr_data', self.ehr_data.shape)
         # ehr_record_x = self.ehr_data.iloc[:,1:]
         # ehr_record_y = self.ehr_data.iloc[:,0]
         # print(self.ehr_data.shape)
@@ -61,7 +63,7 @@ class CTPEDataset3d(BaseCTDataset):
         # self.ehr_data = ehr_preprocessing.feature_selection(ehr_record_x.values, ehr_record_y.values)
         # print("after preprocessing: ", self.ehr_data.shape)
 
-        assert len(self.ctpe_list) == len(self.ehr_data), '[ERROR] Number of CTPE series does not match number of EHR records'
+        # assert len(self.ctpe_list) == len(self.ehr_data), '[ERROR] Number of CTPE series does not match number of EHR records'
 
         self.positive_idxs = [i for i in range(len(self.ctpe_list)) if self.ctpe_list[i].is_positive]
         self.min_pe_slices = args.min_abnormal_slices
@@ -113,8 +115,10 @@ class CTPEDataset3d(BaseCTDataset):
         # ctpe_idx = self.window_to_series_idx[idx]
         ctpe = self.ctpe_list[idx]
         # print('CTPE num slices: ', ctpe.num_slices)
-
+        
         ehr_record = self.ehr_data[self.ehr_data['study_nums']==ctpe.study_num].drop(['study_nums'], axis=1).values
+        #print('ehr_record', ehr_record.shape)
+
         num_subvolumes = ctpe.num_slices // self.num_slices + (1 if ctpe.num_slices % self.num_slices > 0 else 0)
         # print('num_subvolumes: ', num_subvolumes)
         # print('ctpe.num_slices: ', ctpe.num_slices)

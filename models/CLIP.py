@@ -11,7 +11,15 @@ class CLIP(nn.Module):
         self.text = ehr_model
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         self.penetbackbone = penet_backbone
-        if(unfreeze_penet == False):
+        if(unfreeze_penet == True):
+            ct =0
+            print("[INFO] Unfreeze few PeNet blocks...")
+            for child in self.penetbackbone.children():
+                ct+=1
+                if ct<4:
+                    for param in child.parameters():
+                        param.requires_grad = False
+        else:
             print("[INFO] Freezing PeNet backbone...")
             for param in self.penetbackbone.parameters():
                 param.requires_grad = False

@@ -32,14 +32,16 @@ print("Experiment Name: ", EXP_NAME)
 
 model_fn = models.__dict__[args_.model]
 backbone_model = model_fn(**vars(args_))
-backbone_model = backbone_model.to(device)
+backbone_model = backbone_model
 
 # Combined models
 combined_model = CLIP(img_model, ehr_model, backbone_model, unfreeze_penet = args_.unfreeze_penet)
-img_model = img_model.to(device)
-ehr_model = ehr_model.to(device)
-combined_model = combined_model.to(device)
-combined_model = torch.nn.DataParallel(combined_model, args_.gpu_ids)
+# ehr_model = ehr_model.to(device)
+# img_model = img_model.to(device)
+# combined_model = combined_model.to(device)
+print(utils.get_available_devices())
+combined_model = torch.nn.DataParallel(combined_model, utils.get_available_devices()[1])
+combined_model = combined_model.to(utils.get_available_devices()[1][0])
 
 #specifying loss function and optimizer
 criterion = ClipLoss()
@@ -77,15 +79,15 @@ if(args_.resume_training):
 # Data Loaders
 train_set = CTPEDataset3d(args_, phase='train')
 val_set = CTPEDataset3d(args_, phase='val', is_training_set=False)
-test_set = CTPEDataset3d(args_, phase='test', is_training_set=False)
+# test_set = CTPEDataset3d(args_, phase='test', is_training_set=False)
 
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=args_.batch_size, shuffle=True)
 val_loader = torch.utils.data.DataLoader(val_set, batch_size=args_.batch_size, shuffle=False)
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=args_.batch_size, shuffle=False)
+# test_loader = torch.utils.data.DataLoader(test_set, batch_size=args_.batch_size, shuffle=False)
 
 print('train_set: ', len(train_set))
 print('val_set: ', len(val_set))
-print('test_set: ', len(test_set))
+# print('test_set: ', len(test_set))
 
 #train
 epochs= args_.num_epochs
@@ -101,8 +103,9 @@ def train():
     validation_loss=[]
     loss_computations = (len(train_set) / args_.clip_bs)
     print("[INFO] Number of loss computations per epoch: {}".format(loss_computations))
-
+    #print('epochs', epochs)
     for epoch in range(start_epoch, epochs):
+        #print('[INFO] helllooo: {}'.format(args_.clip_bs))
         train_loss=0
         test_loss=0
         epochs_list.append(epoch)
@@ -112,33 +115,41 @@ def train():
         bs_counter = 0
         f1s = []
         f2s = []
+
+        f1ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
+        f2ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
+
         with tqdm(train_loader, unit = 'batch') as tepoch:
             for batch_idx, (img_train_data, ehr_train_data, train_labels) in enumerate(tepoch):
 
-                img_train_data = img_train_data.to(device)
-                ehr_train_data = ehr_train_data.to(device)
+                img_train_data = img_train_data.to(utils.get_available_devices()[1][0])
+                #print('hiiii',img_train_data.shape)
+                ehr_train_data = ehr_train_data.to(utils.get_available_devices()[1][0])
+                #print('hiiii',ehr_train_data.shape)
                 # train_labels = train_labels.to(device)
                 # for key, value in train_labels.items():
                 #     train_labels[key] = train_labels[key].to(device)
 
                 # print(img_train_data.device, ehr_train_data.device)
+                
                 f1,f2, logits_scale = combined_model.forward(img_train_data.float(), ehr_train_data.float())
-
+                
                 optimizer.zero_grad()
 
                 # CLIP Loss
+                f1ten[:,bs_counter] = f1.cpu()
+                f2ten[:,bs_counter] = f2.cpu()
+                logits_scale = logits_scale.cpu()
+
                 bs_counter += 1
-                f1s.append(f1)
-                f2s.append(f2.squeeze(1))
+
                 if bs_counter == args_.clip_bs or batch_idx == len(train_loader) - 1:
 
                     print("\n[INFO] Time to compute clip loss...")
                     bs_counter = 0
-                    f1 = torch.stack(f1s)
-                    f2 = torch.stack(f2s)
-                    f1s = []
-                    f2s = []
-                    loss = criterion(f1, f2.squeeze(1), logits_scale)
+                    loss = criterion(f1ten, f2ten, logits_scale)
+                    f1ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
+                    f2ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
                     
                     loss.backward()
                     optimizer.step()
@@ -150,31 +161,32 @@ def train():
             print("\n[INFO] Starting validation...")
             with torch.no_grad():
                 combined_model.eval()
-                f1s = []
-                f2s = []
+                f1ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
+                f2ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
+
                 
                 with tqdm(val_loader, unit ="batch") as tepoch:
                     for batch_idx ,(img_val_data, ehr_val_data, val_labels) in enumerate(tepoch):
-                        img_val_data = img_val_data.to(device)
-                        ehr_val_data = ehr_val_data.to(device)
+                        img_val_data = img_val_data.to(utils.get_available_devices()[1][0])
+                        ehr_val_data = ehr_val_data.to(utils.get_available_devices()[1][0])
                         # val_labels = val_labels.to(device)
                         
                         f1,f2, logits_scale = combined_model.forward(img_val_data.float(), ehr_val_data.float())
 
+
+                        f1ten[:,bs_counter] = f1.cpu()
+                        f2ten[:,bs_counter] = f2.cpu()
+                        logits_scale = logits_scale.cpu()
                         bs_counter += 1
-                        f1s.append(f1)
-                        f2s.append(f2.squeeze(1))
 
                         if(bs_counter == args_.clip_bs or batch_idx == len(val_loader) - 1):
                             print("\n[INFO] Time to compute clip loss...")
                             bs_counter = 0
-                            f1 = torch.stack(f1s)
-                            f2 = torch.stack(f2s)
-                            f1s = []
-                            f2s = []
+                            f1ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
+                            f2ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
 
                             # print(f1.shape, f2.shape, logits_scale.shape)
-                            loss = criterion(f1, f2.squeeze(1), logits_scale)
+                            loss = criterion(f1ten, f2ten, logits_scale)
                             
                             test_loss+=loss.item()
                             print("\n[INFO] val loss: {0}".format(test_loss))
@@ -221,7 +233,8 @@ def train():
             # save checkpoint as best model
             model_checkpoints.save_ckp(img_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_img_model.pt"))
             model_checkpoints.save_ckp(ehr_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_ehr_model.pt"))
-            model_checkpoints.save_ckp(penet_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_penet_model.pt"))
+            if(args_.unfreeze_penet):
+                model_checkpoints.save_ckp(penet_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_penet_model.pt"))
             valid_loss_min = test_loss/(batch_idx+1)
 
         training_loss.append(train_loss/(batch_idx+1))
