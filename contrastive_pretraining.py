@@ -166,7 +166,7 @@ def train():
 
                 
                 with tqdm(val_loader, unit ="batch") as tepoch:
-                    for batch_idx ,(img_val_data, ehr_val_data, val_labels) in enumerate(tepoch):
+                    for val_batch_idx ,(img_val_data, ehr_val_data, val_labels) in enumerate(tepoch):
                         img_val_data = img_val_data.to(utils.get_available_devices()[1][0])
                         ehr_val_data = ehr_val_data.to(utils.get_available_devices()[1][0])
                         # val_labels = val_labels.to(device)
@@ -179,7 +179,7 @@ def train():
                         logits_scale = logits_scale.cpu()
                         bs_counter += 1
 
-                        if(bs_counter == args_.clip_bs or batch_idx == len(val_loader) - 1):
+                        if(bs_counter == args_.clip_bs or val_batch_idx == len(val_loader) - 1):
                             print("\n[INFO] Time to compute clip loss...")
                             bs_counter = 0
                             f1ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
@@ -229,17 +229,17 @@ def train():
             os.makedirs(MYDIR)
 
         # # ## TODO: save the model if validation loss has decreased
-        if  test_loss/(batch_idx+1) <= valid_loss_min:
+        if  test_loss/(val_batch_idx+1) <= valid_loss_min:
             # save checkpoint as best model
             model_checkpoints.save_ckp(img_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_img_model.pt"))
             model_checkpoints.save_ckp(ehr_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_ehr_model.pt"))
             if(args_.unfreeze_penet):
                 model_checkpoints.save_ckp(penet_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_penet_model.pt"))
-            valid_loss_min = test_loss/(batch_idx+1)
+            valid_loss_min = test_loss/(val_batch_idx+1)
 
         training_loss.append(train_loss/(batch_idx+1))
-        validation_loss.append(test_loss/(batch_idx+1))
-        print('\naverage train loss: {:.4f} average validation loss: {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(batch_idx+1)))
+        validation_loss.append(test_loss/(val_batch_idx+1))
+        print('\naverage train loss: {:.4f} average validation loss: {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(val_batch_idx+1)))
         scheduler.step()
 
 
