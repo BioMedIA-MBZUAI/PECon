@@ -7,7 +7,7 @@ import torch.nn.functional as F
 class EHR_MLP(nn.Module):
     def __init__(self):
         super(EHR_MLP, self).__init__()
-        self.fc1 = nn.Linear(39, 128)
+        self.fc1 = nn.Linear(40, 128)
         self.fc2 = nn.Linear(128,128)
         self.dropout1 = nn.Dropout(0.4)
         

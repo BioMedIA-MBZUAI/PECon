@@ -55,6 +55,7 @@ class CTPEDataset3d(BaseCTDataset):
         self.ehr_data = pd.read_csv(args.ehr_path)
         self.ehr_data = self.ehr_data[self.ehr_data['phase']==self.phase].iloc[:,:-1]
         self.ehr_data = self.ehr_data.iloc[:,1:]
+
         #print('ehr_data', self.ehr_data.shape)
         # ehr_record_x = self.ehr_data.iloc[:,1:]
         # ehr_record_y = self.ehr_data.iloc[:,0]
@@ -108,6 +109,7 @@ class CTPEDataset3d(BaseCTDataset):
     
     def __len__(self):
         return len(self.ctpe_list)
+        # return 8
 
     def __getitem__(self, idx):
         # Choose ctpe and window within ctpe
@@ -117,7 +119,6 @@ class CTPEDataset3d(BaseCTDataset):
         # print('CTPE num slices: ', ctpe.num_slices)
         
         ehr_record = self.ehr_data[self.ehr_data['study_nums']==ctpe.study_num].drop(['study_nums'], axis=1).values
-        #print('ehr_record', ehr_record.shape)
 
         num_subvolumes = ctpe.num_slices // self.num_slices + (1 if ctpe.num_slices % self.num_slices > 0 else 0)
         # print('num_subvolumes: ', num_subvolumes)

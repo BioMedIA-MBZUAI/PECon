@@ -1,0 +1,13 @@
+device:  cuda
+Experiment Name:  UnFreezePeNet100EpochsWoutSub
+[INFO] Unfreeze few PeNet blocks...
+(device(type='cuda', index=0), [0])
+[INFO] Loading PeNet pretrained model from /share/nvmedata/PE/data/data-dir/penet_best.pth.tar...
+train_set:  1429
+val_set:  164
+[INFO] Training for 100 epochs...
+[INFO] Epochs per evaluation: 1
+[INFO] Clip batch size: 128
+[INFO] Number of loss computations per epoch: 11.1640625
+epoch number: 0
+  0%|          | 0/1429 [00:00<?, ?batch/s]  0%|          | 1/1429 [00:02<55:45,  2.34s/batch]  0%|          | 2/1429 [00:04<54:53,  2.31s/batch]  0%|          | 3/1429 [00:06<47:53,  2.02s/batch]  0%|          | 4/1429 [00:08<50:30,  2.13s/batch]  0%|          | 5/1429 [00:10<50:27,  2.13s/batch]  0%|          | 6/1429 [00:13<57:39,  2.43s/batch]  0%|          | 7/1429 [00:16<1:01:49,  2.61s/batch]  1%|          | 8/1429 [00:19<1:03:21,  2.68s/batch]  1%|          | 9/1429 [00:21<59:01,  2.49s/batch]    1%|          | 10/1429 [00:24<1:00:09,  2.54s/batch]  1%|          | 11/1429 [00:26<58:11,  2.46s/batch]    1%|          | 12/1429 [00:28<56:06,  2.38s/batch]  1%|          | 13/1429 [00:30<53:12,  2.25s/batch]  1%|          | 14/1429 [00:32<51:16,  2.17s/batch]  1%|          | 15/1429 [00:35<55:19,  2.35s/batch]  1%|          | 16/1429 [00:38<1:02:15,  2.64s/batch]  1%|          | 17/1429 [00:40<57:38,  2.45s/batch]    1%|▏         | 18/1429 [00:43<56:25,  2.40s/batch]  1%|▏         | 19/1429 [00:45<57:10,  2.43s/batch]  1%|▏         | 20/1429 [00:47<55:21,  2.36s/batch]  1%|▏         | 21/1429 [00:49<54:30,  2.32s/batch]  2%|▏         | 22/1429 [00:51<52:06,  2.22s/batch]  2%|▏         | 23/1429 [00:53<48:09,  2.06s/batch]  2%|▏         | 24/1429 [00:55<44:36,  1.91s/batch]  2%|▏         | 25/1429 [00:57<50:38,  2.16s/batch]  2%|▏         | 26/1429 [00:59<49:24,  2.11s/batch]  2%|▏         | 27/1429 [01:02<51:12,  2.19s/batch]  2%|▏         | 28/1429 [01:04<49:45,  2.13s/batch]  2%|▏         | 29/1429 [01:07<55:48,  2.39s/batch]  2%|▏         | 30/1429 [01:10<1:00:43,  2.60s/batch]  2%|▏         | 31/1429 [01:12<57:25,  2.46s/batch]    2%|▏         | 32/1429 [01:14<56:53,  2.44s/batch]  2%|▏         | 33/1429 [01:17<58:55,  2.53s/batch]  2%|▏         | 34/1429 [01:20<59:09,  2.54s/batch]  2%|▏         | 35/1429 [01:22<58:34,  2.52s/batch]Killed

@@ -13,6 +13,7 @@ import utils
 from visualization import plot_metrics
 from models import model_checkpoints
 from args import TrainArgParser
+import math
 torch.manual_seed(0)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -45,8 +46,8 @@ combined_model = combined_model.to(utils.get_available_devices()[1][0])
 
 #specifying loss function and optimizer
 criterion = ClipLoss()
-optimizer = torch.optim.SGD(combined_model.parameters(), lr=0.1)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.1)
+optimizer = torch.optim.SGD(combined_model.parameters(), lr=args_.learning_rate)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
 
 # Loading pretrained model
 if(args_.use_pretrained):
@@ -75,7 +76,6 @@ if(args_.resume_training):
         print("[WARNING] Could not load experiment name from checkpoint. Using default experiment name: {}".format(EXP_NAME))
     
 
-
 # Data Loaders
 train_set = CTPEDataset3d(args_, phase='train')
 val_set = CTPEDataset3d(args_, phase='val', is_training_set=False)
@@ -101,8 +101,9 @@ def train():
     epochs_list=[]
     training_loss=[]
     validation_loss=[]
-    loss_computations = (len(train_set) / args_.clip_bs)
-    print("[INFO] Number of loss computations per epoch: {}".format(loss_computations))
+    train_loss_computations = math.ceil(len(train_set) / args_.clip_bs)
+    val_loss_computations = math.ceil(len(val_set) / args_.clip_bs)
+    print("[INFO] Number of train loss computations per epoch: {}".format(train_loss_computations))
     #print('epochs', epochs)
     for epoch in range(start_epoch, epochs):
         #print('[INFO] helllooo: {}'.format(args_.clip_bs))
@@ -155,7 +156,7 @@ def train():
                     optimizer.step()
                     
                     train_loss += loss.item()
-                    print("\n[INFO] train loss: {0}".format(train_loss))
+                    print("\n[INFO] train loss: {0}".format(loss.item()))
         
         if(epoch % args_.epochs_per_eval==0):
             print("\n[INFO] Starting validation...")
@@ -179,22 +180,21 @@ def train():
                         logits_scale = logits_scale.cpu()
                         bs_counter += 1
 
-                        if(bs_counter == args_.clip_bs or val_batch_idx == len(val_loader) - 1):
+                        if(bs_counter == 82 or val_batch_idx == len(val_loader) - 1):
                             print("\n[INFO] Time to compute clip loss...")
                             bs_counter = 0
-                            f1ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
-                            f2ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
-
                             # print(f1.shape, f2.shape, logits_scale.shape)
                             loss = criterion(f1ten, f2ten, logits_scale)
+                            f1ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
+                            f2ten = torch.zeros((128,args_.clip_bs), dtype=torch.float64)
                             
                             test_loss+=loss.item()
-                            print("\n[INFO] val loss: {0}".format(test_loss))
+                            print("\n[INFO] val loss: {0}".format(loss.item()))
 
   
         img_checkpoint = {
             'epoch': epoch + 1,
-            'valid_loss_min': test_loss/(batch_idx+1),
+            'valid_loss_min': test_loss/(val_loss_computations),
             'state_dict': combined_model.module.visual.state_dict(),
             'optimizer': optimizer.state_dict(),
             'exp_name': EXP_NAME,
@@ -203,7 +203,7 @@ def train():
 
         ehr_checkpoint = {
             'epoch': epoch + 1,
-            'valid_loss_min': test_loss/(batch_idx+1),
+            'valid_loss_min': test_loss/(val_loss_computations),
             'state_dict': combined_model.module.text.state_dict(),
             'optimizer': optimizer.state_dict(),
             'exp_name': EXP_NAME,
@@ -212,7 +212,7 @@ def train():
 
         penet_checkpoint = {
             'epoch': epoch + 1,
-            'valid_loss_min': test_loss/(batch_idx+1),
+            'valid_loss_min': test_loss/(val_loss_computations),
             'state_dict': combined_model.module.penetbackbone.state_dict(),
             'optimizer': optimizer.state_dict(),
             'exp_name': EXP_NAME,
@@ -229,17 +229,19 @@ def train():
             os.makedirs(MYDIR)
 
         # # ## TODO: save the model if validation loss has decreased
-        if  test_loss/(val_batch_idx+1) <= valid_loss_min:
+        if  test_loss/(val_loss_computations) <= valid_loss_min:
             # save checkpoint as best model
             model_checkpoints.save_ckp(img_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_img_model.pt"))
             model_checkpoints.save_ckp(ehr_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_ehr_model.pt"))
             if(args_.unfreeze_penet):
                 model_checkpoints.save_ckp(penet_checkpoint, os.path.join(MYDIR,f"epoch{str(epoch)}-pretrained_penet_model.pt"))
-            valid_loss_min = test_loss/(val_batch_idx+1)
+            valid_loss_min = test_loss/(val_loss_computations)
 
-        training_loss.append(train_loss/(batch_idx+1))
-        validation_loss.append(test_loss/(val_batch_idx+1))
-        print('\naverage train loss: {:.4f} average validation loss: {:.4f}'.format(train_loss/(batch_idx+1),test_loss/(val_batch_idx+1)))
+        training_loss.append(train_loss/(train_loss_computations))
+        validation_loss.append(test_loss/(val_loss_computations))
+        print("val loss computations: ", val_loss_computations)
+        print("train_loss_computations: ", train_loss_computations)
+        print('\naverage train loss: {:.4f} average validation loss: {:.4f}'.format(train_loss/train_loss_computations,test_loss/val_loss_computations))
         scheduler.step()
 
 
@@ -250,8 +252,8 @@ def train():
     if not CHECK_FOLDER:
         os.makedirs(MYDIR)
 
-    plot_metrics.plot_loss(epochs_list, training_loss,'Training Loss',MYDIR,'training_loss.png')
-    plot_metrics.plot_loss(epochs_list, validation_loss,'Validation Loss' ,MYDIR,'validation_loss.png')
+    plot_metrics.plot_loss(epochs_list, training_loss,'Training Loss', MYDIR,'training_loss.png')
+    plot_metrics.plot_loss(epochs_list, validation_loss,'Validation Loss' , MYDIR,'validation_loss.png')
 
 if __name__ == '__main__':
     # import cProfile, pstats

@@ -1,0 +1,74 @@
+device:  cuda
+Experiment Name:  UnFreezePeNet100EpochsWoutSub
+[INFO] Unfreeze few PeNet blocks...
+(device(type='cuda', index=0), [0])
+[INFO] Loading PeNet pretrained model from /share/nvmedata/PE/data/data-dir/penet_best.pth.tar...
+train_set:  8
+val_set:  8
+[INFO] Training for 100 epochs...
+[INFO] Epochs per evaluation: 1
+[INFO] Clip batch size: 4
+[INFO] Number of train loss computations per epoch: 2.0
+epoch number: 0
+  0%|          | 0/8 [00:00<?, ?batch/s] 12%|█▎        | 1/8 [00:00<00:02,  2.82batch/s] 25%|██▌       | 2/8 [00:02<00:09,  1.54s/batch] 38%|███▊      | 3/8 [00:04<00:07,  1.55s/batch]
+[INFO] Time to compute clip loss...
+
+[INFO] train loss: 4.8851098961359805
+ 50%|█████     | 4/8 [00:06<00:07,  1.79s/batch] 62%|██████▎   | 5/8 [00:08<00:05,  1.89s/batch] 75%|███████▌  | 6/8 [00:11<00:04,  2.18s/batch] 88%|████████▊ | 7/8 [00:13<00:02,  2.12s/batch]
+[INFO] Time to compute clip loss...
+
+[INFO] train loss: 4.842285358279726
+100%|██████████| 8/8 [00:15<00:00,  2.28s/batch]100%|██████████| 8/8 [00:15<00:00,  1.99s/batch]
+
+[INFO] Starting validation...
+  0%|          | 0/8 [00:00<?, ?batch/s] 12%|█▎        | 1/8 [00:01<00:07,  1.01s/batch] 25%|██▌       | 2/8 [00:01<00:05,  1.17batch/s] 38%|███▊      | 3/8 [00:02<00:03,  1.30batch/s]
+[INFO] Time to compute clip loss...
+
+[INFO] val loss: 4.784146413870074
+ 50%|█████     | 4/8 [00:03<00:03,  1.32batch/s] 62%|██████▎   | 5/8 [00:03<00:01,  1.51batch/s] 75%|███████▌  | 6/8 [00:04<00:01,  1.40batch/s] 88%|████████▊ | 7/8 [00:05<00:00,  1.35batch/s]
+[INFO] Time to compute clip loss...
+
+[INFO] val loss: 4.785973637005027
+100%|██████████| 8/8 [00:05<00:00,  1.45batch/s]100%|██████████| 8/8 [00:05<00:00,  1.37batch/s]
+
+average train loss: 4.8637 average validation loss: 4.7851
+epoch number: 1
+  0%|          | 0/8 [00:00<?, ?batch/s] 12%|█▎        | 1/8 [00:02<00:14,  2.00s/batch] 25%|██▌       | 2/8 [00:02<00:06,  1.02s/batch] 38%|███▊      | 3/8 [00:04<00:07,  1.58s/batch]
+[INFO] Time to compute clip loss...
+
+[INFO] train loss: 4.818601090054438
+ 50%|█████     | 4/8 [00:07<00:08,  2.06s/batch] 62%|██████▎   | 5/8 [00:09<00:06,  2.04s/batch] 75%|███████▌  | 6/8 [00:11<00:04,  2.01s/batch] 88%|████████▊ | 7/8 [00:13<00:02,  2.13s/batch]
+[INFO] Time to compute clip loss...
+
+[INFO] train loss: 4.77926148034794
+100%|██████████| 8/8 [00:15<00:00,  1.95s/batch]100%|██████████| 8/8 [00:15<00:00,  1.91s/batch]
+
+[INFO] Starting validation...
+  0%|          | 0/8 [00:00<?, ?batch/s] 12%|█▎        | 1/8 [00:01<00:07,  1.01s/batch] 25%|██▌       | 2/8 [00:01<00:05,  1.18batch/s] 38%|███▊      | 3/8 [00:02<00:03,  1.30batch/s]
+[INFO] Time to compute clip loss...
+
+[INFO] val loss: 4.698731220599408
+ 50%|█████     | 4/8 [00:03<00:03,  1.32batch/s] 62%|██████▎   | 5/8 [00:03<00:01,  1.51batch/s] 75%|███████▌  | 6/8 [00:04<00:01,  1.40batch/s] 88%|████████▊ | 7/8 [00:05<00:00,  1.35batch/s]
+[INFO] Time to compute clip loss...
+
+[INFO] val loss: 4.689549432285727
+100%|██████████| 8/8 [00:05<00:00,  1.46batch/s]100%|██████████| 8/8 [00:05<00:00,  1.37batch/s]
+
+average train loss: 4.7989 average validation loss: 4.6941
+epoch number: 2
+  0%|          | 0/8 [00:00<?, ?batch/s] 12%|█▎        | 1/8 [00:02<00:19,  2.85s/batch] 25%|██▌       | 2/8 [00:04<00:14,  2.38s/batch] 38%|███▊      | 3/8 [00:06<00:10,  2.20s/batch]
+[INFO] Time to compute clip loss...
+
+[INFO] train loss: 4.739703525044543
+ 50%|█████     | 4/8 [00:07<00:05,  1.46s/batch] 62%|██████▎   | 5/8 [00:09<00:05,  1.73s/batch] 75%|███████▌  | 6/8 [00:11<00:03,  1.83s/batch] 88%|████████▊ | 7/8 [00:12<00:01,  1.74s/batch]
+[INFO] Time to compute clip loss...
+
+[INFO] train loss: 4.746696566026541
+100%|██████████| 8/8 [00:15<00:00,  1.95s/batch]100%|██████████| 8/8 [00:15<00:00,  1.93s/batch]
+
+[INFO] Starting validation...
+  0%|          | 0/8 [00:00<?, ?batch/s] 12%|█▎        | 1/8 [00:01<00:07,  1.01s/batch] 25%|██▌       | 2/8 [00:01<00:05,  1.18batch/s] 38%|███▊      | 3/8 [00:02<00:03,  1.30batch/s]
+[INFO] Time to compute clip loss...
+
+[INFO] val loss: 4.645367702060243
+ 50%|█████     | 4/8 [00:03<00:03,  1.32batch/s] 62%|██████▎   | 5/8 [00:03<00:01,  1.51batch/s]Killed
